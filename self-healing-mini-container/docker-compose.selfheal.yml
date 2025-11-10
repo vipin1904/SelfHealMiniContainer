@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+  myapp:
+    build:
+      context: .
+      dockerfile: self_healing/Dockerfile.agent
+    image: myrepo/myapp-selfheal:local
+    container_name: myapp-selfheal
+    environment:
+      - TARGET_PID=1
+      - METRICS_PORT=9100
+      - AGENT_WEBHOOK=http://controller:5000/event
+    ports:
+      - "8080:8080"   # your app port
+      - "9100:9100"   # metrics
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw   # only if you will attempt cgroup writes (not recommended in dev)
+  controller:
+    build:
+      context: self_healing
+      dockerfile: Dockerfile.controller  # see below
+    image: selfheal/controller:local
+    container_name: selfheal-controller
+    ports:
+      - "5000:5000"

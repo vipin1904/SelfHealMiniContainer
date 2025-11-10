@@ -1,0 +1,26 @@
+# Start from your existing base image. Replace `python:3.11-slim` with your base if different.
+FROM python:3.11-slim
+
+# Create directory
+WORKDIR /app
+
+# Copy your main app into /app/app (if you want both app + agent)
+# COPY app/ /app/app
+
+# Copy the agent
+COPY agent.py /app/agent.py
+
+# Install lightweight dependencies
+RUN pip install --no-cache-dir psutil prometheus_client requests
+
+# If your container runs an app, ensure the app is started and agent runs in background.
+# Option A: run agent as sidecar inside same container (supervisor pattern)
+# For demonstration, run agent as PID 1 (manage main app PID by launching app as child).
+# If you want true lifecycle management, run a small supervisor entrypoint (example below)
+
+# We'll provide a simple entrypoint that starts the app (if present) and the agent.
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+EXPOSE 9100
+CMD ["/app/entrypoint.sh"]

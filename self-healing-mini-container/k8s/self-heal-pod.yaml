@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-selfheal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp-selfheal
+  template:
+    metadata:
+      labels:
+        app: myapp-selfheal
+    spec:
+      shareProcessNamespace: true              # allow agent to see PIDs of other containers
+      containers:
+        - name: app
+          image: myrepo/myapp:latest           # your app image
+          ports:
+            - containerPort: 8080
+        - name: self-heal-agent
+          image: myrepo/myapp-selfheal:latest # image containing agent (same or built separately)
+          env:
+            - name: TARGET_PID
+              value: "1"                       # inside pod with shareProcessNamespace, the app may have different pid; use discovery if needed
+            - name: AGENT_WEBHOOK
+              value: "http://selfheal-controller.default.svc.cluster.local:5000/event"
+            - name: METRICS_PORT
+              value: "9100"
+          ports:
+            - containerPort: 9100
+          securityContext:
+            runAsUser: 0                       # note: privileges — try to avoid root in prod
+      # optional: ServiceAccount, RBAC, tolerations, nodeSelector etc.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-selfheal-svc
+spec:
+  selector:
+    app: myapp-selfheal
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

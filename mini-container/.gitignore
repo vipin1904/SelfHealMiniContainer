@@ -1,0 +1,7 @@
+container.out
+rootfs/dev/*
+rootfs/proc/*
+rootfs/sys/*
+*.o
+*.log
+
